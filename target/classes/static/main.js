@@ -22,6 +22,7 @@ function connect() {
 
 function onConnected() {
     stompClient.subscribe('/topic/public', onMessageReceived);
+    fetchMessages();
 }
 
 function onError() {
@@ -31,6 +32,7 @@ function onError() {
 function handler(event) { 
     registryForm.classList.add("hidden");
     messageForm.classList.remove('hidden');
+    messageArea.classList.remove('hidden');
     event.preventDefault();
 }
 
@@ -120,6 +122,51 @@ function onMessageReceived(payload) {
 
     userElement.appendChild(userName);
     
+    if (message.content) {
+        var messageText = document.createTextNode(message.content);
+        textElement.appendChild(messageText);
+    }
+
+    if (message.imageUrl) {
+        var image = document.createElement('img');
+        image.src = message.imageUrl;
+        image.style.maxWidth = '100px';
+        container.appendChild(image);
+    }
+
+    if(message.fileContent) {
+        var content = document.createElement('a');
+        content.href = message.fileContent;
+        content.download = message.fileName;
+        content.textContent = message.fileName;
+        content.style.display = 'block';
+        container.appendChild(content)   
+    }
+
+    container.appendChild(userElement);
+    container.appendChild(textElement);
+    container.classList.add('flex');
+    messageArea.appendChild(container);
+}
+
+function fetchMessages() {
+    fetch('/api/messages')
+        .then(response => response.json())
+        .then(messages => {
+            messages.forEach(message => {
+                displayMessage(message);
+            });
+        })
+        .catch(error => console.error('Error fetching messages:', error));
+}
+
+function displayMessage(message) {
+    var container = document.createElement('div');
+    var userElement = document.createElement('h4');
+    var textElement = document.createElement('p');
+    var userName = document.createTextNode(message.sender);
+
+    userElement.appendChild(userName);
 
     if (message.content) {
         var messageText = document.createTextNode(message.content);
@@ -141,7 +188,6 @@ function onMessageReceived(payload) {
         content.style.display = 'block';
         container.appendChild(content)   
     }
-    
 
     container.appendChild(userElement);
     container.appendChild(textElement);
@@ -149,8 +195,6 @@ function onMessageReceived(payload) {
     messageArea.appendChild(container);
 }
 
-
-
-loginButton.addEventListener('click', handler)
-messageForm.addEventListener('submit', send, true)
+loginButton.addEventListener('click', handler);
+messageForm.addEventListener('submit', send, true);
 window.onload = connect;
